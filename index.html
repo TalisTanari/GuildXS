@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuildX File Scanner</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 64px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 255, 136, 0.7);
+            margin-bottom: 30px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px rgba(0, 255, 136, 0.7), 0 0 20px rgba(0, 255, 136, 0.5);
+            }
+            to {
+                text-shadow: 0 0 20px rgba(0, 255, 136, 0.9), 0 0 30px rgba(0, 255, 136, 0.7);
+            }
+        }
+
+        .file-upload {
+            background: linear-gradient(145deg, #1a1a1a, #121212);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+            text-align: center;
+            width: 400px;
+            border: 1px solid #00ff88;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .file-upload:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+        }
+
+        input[type="file"] {
+            margin: 20px 0;
+            background: #222;
+            padding: 10px;
+            border: 1px solid #00ccff;
+            border-radius: 5px;
+            color: #e0e0e0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[type="file"]::-webkit-file-upload-button {
+            background: #00ccff;
+            color: #0a0a0a;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        input[type="file"]::-webkit-file-upload-button:hover {
+            background: #00b3e6;
+        }
+
+        button {
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            color: #0a0a0a;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #result {
+            margin-top: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            width: 400px;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .safe {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid #00ff88;
+        }
+
+        .unsafe {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff4d4d;
+            border: 1px solid #ff4d4d;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress {
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ccff);
+            animation: progressAnimation 2s linear forwards;
+        }
+
+        @keyframes progressAnimation {
+            0% { width: 0; }
+            100% { width: 100%; }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            opacity: 0.3;
+            z-index: -1;
+            animation: pulse 10s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation"></div>
+    <h1>GuildX</h1>
+    <div class="file-upload">
+        <label for="fileInput" style="font-size: 16px; margin-bottom: 10px; display: block;">
+            Upload a file for scanning
+        </label>
+        <input type="file" id="fileInput" accept="*/*">
+        <div class="progress-bar" id="progressBar">
+            <div class="progress" id="progress"></div>
+        </div>
+        <button id="scanButton" onclick="scanFile()">Scan</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        function scanFile() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('result');
+            const scanButton = document.getElementById('scanButton');
+            const progressBar = document.getElementById('progressBar');
+
+            if (!fileInput.files.length) {
+                resultDiv.innerHTML = "Please select a file first!";
+                resultDiv.className = '';
+                return;
+            }
+
+            // Disable button and show progress bar
+            scanButton.disabled = true;
+            progressBar.style.display = 'block';
+
+            // Simulate scanning with a delay
+            setTimeout(() => {
+                const randomChance = Math.random() * 100;
+                if (randomChance < 15) {
+                    resultDiv.innerHTML = "⚠ Warning: This file is unsafe to use! Potential threats detected.";
+                    resultDiv.className = 'unsafe';
+                } else {
+                    resultDiv.innerHTML = "✓ File is safe to use. No threats detected.";
+                    resultDiv.className = 'safe';
+                }
+
+                // Reset UI
+                progressBar.style.display = 'none';
+                scanButton.disabled = false;
+            }, 2000); // 2-second delay for scanning effect
+        }
+    </script>
+</body>
+</html>
